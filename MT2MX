@@ -1,0 +1,74 @@
+from xml.etree.ElementTree import Element, SubElement, tostring
+
+def convert_mt103_to_pacs008(mt103_message):
+    # Parsing the MT103 message (simplified)
+    mt103_fields = mt103_message.split("\n")
+    mt103_data = {field.split(":")[0]: field.split(":")[1] for field in mt103_fields if ":" in field}
+    
+    # Creating PACS.008 XML structure
+    pacs = Element("Document")
+    fi_to_fi_cstmr_cdt = SubElement(pacs, "FIToFICstmrCdtTrf")
+    grp_hdr = SubElement(fi_to_fi_cstmr_cdt, "GrpHdr")
+    SubElement(grp_hdr, "MsgId").text = mt103_data.get("20", "Unknown")
+    SubElement(grp_hdr, "CreDtTm").text = "2024-12-05T23:43:00"
+    
+    cdt_trf_tx_inf = SubElement(fi_to_fi_cstmr_cdt, "CdtTrfTxInf")
+    pmt_id = SubElement(cdt_trf_tx_inf, "PmtId")
+    SubElement(pmt_id, "InstrId").text = mt103_data.get("21", "Unknown")
+    SubElement(pmt_id, "EndToEndId").text = mt103_data.get("20", "Unknown")
+    
+    amt = SubElement(cdt_trf_tx_inf, "Amt")
+    SubElement(amt, "InstdAmt", Ccy="USD").text = mt103_data.get("32B", "0")[3:]
+    
+    dbtr = SubElement(cdt_trf_tx_inf, "Dbtr")
+    SubElement(dbtr, "Nm").text = mt103_data.get("50K", "Unknown")
+    
+    cdtr = SubElement(cdt_trf_tx_inf, "Cdtr")
+    SubElement(cdtr, "Nm").text = mt103_data.get("59", "Unknown")
+    
+    cdtr_acct = SubElement(cdt_trf_tx_inf, "CdtrAcct")
+    SubElement(cdtr_acct, "Id").text = mt103_data.get("59A", "Unknown")
+    
+    # Converting XML to string
+    pacs_xml = tostring(pacs, encoding="unicode")
+    return pacs_xml
+
+# Accept input MT103 message from user
+print("Please enter your MT103 message (end with a blank line):")
+mt103_message_lines = []
+while True:
+    line = input()
+    if line.strip() == "":
+        break
+    mt103_message_lines.append(line)
+
+mt103_message = "\n".join(mt103_message_lines)
+
+# Converting MT103 to PACS.008
+pacs008_message = convert_mt103_to_pacs008(mt103_message)
+print("\nGenerated PACS.008 Message:\n")
+print(pacs008_message)
+
+ 
+#{1:F01BANKBEBBAXXX0000000000}{2:O1031200970103BANKDEFFXXXX22221234569701031200N}{3:{108:ILOVESEPA}}{4:
+#:20:1234567890123456
+#:23B:CRED
+#:32A:970103USD1234567,89
+#:33B:USD1234567,89
+#:50K:/1234567890
+#JOHN DOE
+#1 MAIN STREET
+#BRUSSELS
+#:52A:BANKBEBB
+#:53A:BANKUS33
+#:57A:BANKDEFF
+#:59:/1234567890123456
+#JANE DOE
+#2 MAIN STREET
+#BERLIN
+#:70:INVOICE 123456
+#:71A:SHA
+#-}
+
+
+
